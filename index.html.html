@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101820">
+<title>Suivi sécurité — EDF BS FAB Alès</title>
+<style>
+  :root {
+    --bg: #101820;
+    --panel: #26343f;
+    --text: #f4f7fa;
+    --muted: #c3ced7;
+    --green: #53d769;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; width: 100%; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  main {
+    width: 100vw; height: 100vh; padding: 4vh 5vw;
+    display: flex; flex-direction: column; justify-content: space-between;
+    text-align: center;
+  }
+  .site {
+    font-size: clamp(18px, 2.6vw, 38px); letter-spacing: .08em;
+    font-weight: 800; color: #ffffff;
+  }
+  .rule { height: 2px; background: #465563; margin: 1.8vh 0; }
+  .label { font-size: clamp(20px, 3vw, 44px); font-weight: 700; line-height: 1.15; }
+  .count {
+    font-size: clamp(100px, 23vw, 300px); line-height: .95;
+    font-weight: 800; color: var(--green); letter-spacing: -.04em;
+  }
+  .date-label { color: var(--muted); font-size: clamp(15px, 1.8vw, 26px); letter-spacing: .07em; }
+  .date-value { font-size: clamp(25px, 3.6vw, 52px); font-weight: 700; margin-top: 1vh; }
+  .message {
+    font-size: clamp(24px, 4vw, 58px); font-weight: 800;
+    color: var(--green); letter-spacing: .02em;
+  }
+  .small { font-size: clamp(12px, 1.1vw, 16px); color: #91a2af; margin-top: 1vh; }
+  @media (max-aspect-ratio: 1/1) {
+    main { padding: 3vh 5vw; }
+    .count { font-size: 26vw; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="site">SITE DE PRODUCTION EDF BS FAB ALES</div>
+    <div class="rule"></div>
+  </header>
+
+  <section>
+    <div class="label">JOURS SANS ACCIDENT AVEC ARRÊT</div>
+    <div id="days" class="count">—</div>
+    <div class="date-label">DATE DU DERNIER ACCIDENT</div>
+    <div id="lastDate" class="date-value">10/02/2025</div>
+  </section>
+
+  <footer>
+    <div class="message">VISONS LE LTIR À 0 !</div>
+    <div class="small">La sécurité est l'affaire de tous · Compteur mis à jour automatiquement chaque jour</div>
+  </footer>
+</main>
+
+<script>
+  // Date du dernier accident au format AAAA-MM-JJ.
+  // Pour la modifier, changez uniquement la date ci-dessous.
+  const DATE_DERNIER_ACCIDENT = "2025-02-10";
+
+  function dateDepuisISO(iso) {
+    const [annee, mois, jour] = iso.split("-").map(Number);
+    return new Date(annee, mois - 1, jour);
+  }
+
+  function formaterDate(date) {
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit", month: "2-digit", year: "numeric"
+    }).format(date);
+  }
+
+  function actualiserCompteur() {
+    const dernierAccident = dateDepuisISO(DATE_DERNIER_ACCIDENT);
+    const aujourdHui = new Date();
+    aujourdHui.setHours(0, 0, 0, 0);
+
+    const jours = Math.max(
+      0,
+      Math.floor((aujourdHui.getTime() - dernierAccident.getTime()) / 86400000)
+    );
+
+    document.getElementById("days").textContent = jours.toLocaleString("fr-FR");
+    document.getElementById("lastDate").textContent = formaterDate(dernierAccident);
+  }
+
+  actualiserCompteur();
+  // Rafraîchit le calcul chaque heure ; la valeur change automatiquement à minuit.
+  setInterval(actualiserCompteur, 60 * 60 * 1000);
+</script>
+</body>
+</html>
