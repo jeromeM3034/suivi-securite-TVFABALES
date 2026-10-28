@@ -56,22 +56,22 @@
   </header>
 
   <section>
-    <div class="label">JOURS SANS ACCIDENT AVEC ARRÊT</div>
+    <div class="label">NBRE JOURS SANS ACCIDENT AVEC ARRÊT</div>
     <div id="days" class="count">—</div>
     <div class="date-label">DATE DU DERNIER ACCIDENT</div>
-    <div id="lastDate" class="date-value">10/02/2025</div>
+    <div id="lastDate" class="date-value">11/02/2025</div>
   </section>
 
   <footer>
-    <div class="message">VISONS LE LTIR À 0 !</div>
-    <div class="small">La sécurité est l'affaire de tous · Compteur mis à jour automatiquement chaque jour</div>
+    <div class="message">VISONS L'INDICATEUR LTIR À 0 ! ( Lost Time Injury Rate )</div>
+    <div class="small">La sécurité est l'affaire de tous · Compteur mis à jour automatiquement </div>
   </footer>
 </main>
 
 <script>
   // Date du dernier accident au format AAAA-MM-JJ.
   // Pour la modifier, changez uniquement la date ci-dessous.
-  const DATE_DERNIER_ACCIDENT = "2025-02-10";
+  const DATE_DERNIER_ACCIDENT = "2025-02-11";
 
   function dateDepuisISO(iso) {
     const [annee, mois, jour] = iso.split("-").map(Number);
