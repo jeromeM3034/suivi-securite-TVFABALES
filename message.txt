@@ -1,0 +1,7 @@
+# Écrivez ici le message qui défile en bas de l'écran (une ligne = un message).
+# Les lignes qui commencent par # sont ignorées. Enregistrez le fichier en UTF-8.
+# Pour ne rien afficher, laissez le fichier sans aucune ligne de message.
+
+Message du jour : FAT GENSUN ! BIENVENUE A SCADAMAN qui a pas raté son train pour une fois!
+On pense à STEVEN qui revient demain
+Vendredi on parle NEUROSCIENCES
