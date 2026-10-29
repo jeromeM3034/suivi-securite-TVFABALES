@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#10367a">
+<meta name="theme-color" content="#101820">
 <title>Suivi sécurité — EDF BS FAB Alès</title>
 <style>
   :root {
-    --bg: #10367a;
+    --bg: #101820;
     --panel: #26343f;
     --text: #f4f7fa;
     --muted: #c3ced7;
     --green: #53d769;
+    --orange: #ff9f43;
+    --red: #ff5a5a;
+    --yellow: #ffd54a;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -22,14 +25,16 @@
   body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
   main {
     width: 100vw; height: 100vh; padding: 3vh 5vw;
-    display: flex; flex-direction: column; justify-content: space-between;
+    display: flex; flex-direction: column;
     text-align: center;
   }
+
+  /* ---------- En-tête commun aux deux pages ---------- */
   .topbar { display: flex; justify-content: space-between; align-items: center; gap: 3vw; }
   .logo { background: #ffffff; border-radius: 1.2vh; padding: 1vh 1.6vw; display: flex; }
   .logo img { height: clamp(44px, 9vh, 110px); width: auto; display: block; }
   .clock { text-align: right; }
-  .time { font-size: clamp(30px, 5vw, 80px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .time { font-size: clamp(30px, 4.2vw, 68px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
   .today { font-size: clamp(14px, 1.8vw, 28px); color: var(--muted); margin-top: .8vh; }
   .saint { font-size: clamp(14px, 1.8vw, 28px); color: var(--green); font-weight: 700; margin-top: .6vh; }
   .site {
@@ -37,9 +42,21 @@
     font-weight: 800; color: #ffffff; margin-top: 1.5vh;
   }
   .rule { height: 2px; background: #465563; margin: 1.4vh 0; }
+
+  /* ---------- Pages qui alternent ---------- */
+  .views { position: relative; flex: 1; min-height: 0; }
+  .view {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    opacity: 0; visibility: hidden;
+    transition: opacity .8s ease, visibility .8s;
+  }
+  .view.active { opacity: 1; visibility: visible; }
+
+  /* ---------- Page 1 : compteur ---------- */
   .label { font-size: clamp(20px, 3vw, 44px); font-weight: 700; line-height: 1.15; }
   .count {
-    font-size: clamp(100px, min(21vw, 27vh), 300px); line-height: .95;
+    font-size: clamp(100px, min(21vw, 25vh), 300px); line-height: .95;
     font-weight: 800; color: var(--green); letter-spacing: -.04em;
   }
   .date-label { color: var(--muted); font-size: clamp(15px, 1.8vw, 26px); letter-spacing: .07em; }
@@ -49,6 +66,58 @@
     color: var(--green); letter-spacing: .02em;
   }
   .small { font-size: clamp(12px, 1.1vw, 16px); color: #91a2af; margin-top: 1vh; }
+
+  /* ---------- Page 2 : alertes sécurité qui défilent ---------- */
+  .alerts-count { color: var(--muted); font-size: clamp(14px, 1.6vw, 24px); letter-spacing: .05em; margin-top: .6vh; }
+  .alerts-viewport {
+    flex: 1; min-height: 0; position: relative; overflow: hidden; margin: 1.6vh 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+  }
+  .alerts-track { position: absolute; top: 0; left: 0; right: 0; will-change: transform; }
+  .alert-list { display: flex; flex-direction: column; gap: 1.2vh; padding-bottom: 1.2vh; }
+  .alert {
+    --sev: var(--green);
+    display: grid; grid-template-columns: clamp(110px, 11vw, 190px) 1fr auto;
+    gap: 2vw; align-items: center; text-align: left;
+    background: var(--panel); border-left: .6vw solid var(--sev); border-radius: 1vh;
+    padding: 1.1vh 1.8vw;
+  }
+  .alert.sev-tres-eleve { --sev: var(--red); }
+  .alert.sev-eleve { --sev: var(--orange); }
+  .alert.sev-moyen { --sev: var(--yellow); }
+  .a-date { font-size: clamp(15px, 1.8vw, 28px); font-weight: 800; }
+  .a-id { font-size: clamp(11px, 1.1vw, 17px); color: #91a2af; margin-top: .4vh; }
+  .a-desc { font-size: clamp(16px, 1.8vw, 28px); font-weight: 700; line-height: 1.2; }
+  .a-meta { color: var(--muted); font-size: clamp(12px, 1.2vw, 19px); margin-top: .4vh; }
+  .a-measure { color: #9fe8ac; font-size: clamp(12px, 1.2vw, 19px); margin-top: .3vh; }
+  .badges { display: flex; flex-direction: column; gap: .6vh; align-items: flex-end; }
+  .badge {
+    padding: .3vh 1vw; border-radius: 99px; font-weight: 800; white-space: nowrap;
+    font-size: clamp(11px, 1.15vw, 18px); color: #101820; background: var(--sev);
+  }
+  .badge.statut { background: transparent; color: var(--muted); border: 2px solid #465563; }
+  .badge.statut.encours { color: var(--orange); border-color: var(--orange); }
+  .alerts-empty { color: var(--muted); font-size: clamp(18px, 2.4vw, 36px); padding-top: 8vh; }
+  .alerts-message {
+    font-size: clamp(18px, 2.6vw, 38px); font-weight: 800; color: var(--green); letter-spacing: .02em;
+  }
+
+  /* ---------- Bandeau de message défilant (texte lu dans message.txt) ---------- */
+  .ticker {
+    flex: none; position: relative; overflow: hidden; margin-top: 1.4vh;
+    height: clamp(44px, 7vh, 90px); background: var(--panel); border-radius: 1vh;
+  }
+  .ticker-text {
+    position: absolute; top: 0; bottom: 0; left: 0; display: flex; align-items: center;
+    white-space: nowrap; font-size: clamp(20px, 3vw, 48px); font-weight: 800; color: var(--text);
+    will-change: transform; transform: translateX(var(--depart, 100vw));
+  }
+  @keyframes defile-message {
+    from { transform: translateX(var(--depart)); }
+    to   { transform: translateX(var(--arrivee)); }
+  }
+
   @media (max-aspect-ratio: 1/1) {
     main { padding: 3vh 5vw; }
     .topbar { flex-direction: column; gap: 1.5vh; }
@@ -57,6 +126,14 @@
     .today, .saint { font-size: 3.6vw; }
     .logo img { height: clamp(40px, 7vh, 90px); }
     .count { font-size: 26vw; }
+    .alert { grid-template-columns: 1fr; gap: .8vh; }
+    .a-date, .a-id { display: inline-block; margin-right: 2vw; }
+    .a-desc { font-size: 4.4vw; }
+    .a-meta, .a-measure { font-size: 3.2vw; }
+    .badges { flex-direction: row; align-items: center; }
+    .badge { font-size: 2.8vw; }
+    .alerts-message { font-size: 4.4vw; }
+    .ticker-text { font-size: 5vw; }
   }
 </style>
 </head>
@@ -75,23 +152,69 @@
     <div class="rule"></div>
   </header>
 
-  <section>
-    <div class="label">NBRE JOURS SANS ACCIDENT AVEC ARRÊT</div>
-    <div id="days" class="count">—</div>
-    <div class="date-label">DATE DU DERNIER ACCIDENT</div>
-    <div id="lastDate" class="date-value">11/02/2025</div>
-  </section>
+  <div class="views">
 
-  <footer>
-    <div class="message">VISONS L'INDICATEUR LTIR À 0 ! ( Lost Time Injury Rate )</div>
-    <div class="small">La sécurité est l'affaire de tous · Compteur mis à jour automatiquement </div>
-  </footer>
+    <!-- Page 1 : compteur de jours sans accident -->
+    <section id="view-counter" class="view active">
+      <div>
+        <div class="label">NBRE JOURS SANS ACCIDENT AVEC ARRÊT</div>
+        <div id="days" class="count">—</div>
+        <div class="date-label">DATE DU DERNIER ACCIDENT</div>
+        <div id="lastDate" class="date-value">11/02/2025</div>
+      </div>
+      <footer>
+        <div class="message">VISONS L’INDICATEUR LTIR À 0 ! ( Lost Time Injury Rate )</div>
+        <div class="small">La sécurité est l’affaire de tous · Compteur mis à jour automatiquement </div>
+      </footer>
+    </section>
+
+    <!-- Page 2 : liste des alertes sécurité (défilement automatique) -->
+    <section id="view-alerts" class="view">
+      <div>
+        <div class="label">ALERTES SÉCURITÉ GROUPE EBS</div>
+        <div id="alertsCount" class="alerts-count"></div>
+      </div>
+      <div class="alerts-viewport"><div id="alertsTrack" class="alerts-track"></div></div>
+      <footer>
+        <div class="alerts-message">DÉCLARONS LES SITUATIONS DANGEREUSES, ÉVITONS L’ACCIDENT !</div>
+        <div class="small">La sécurité est l’affaire de tous</div>
+      </footer>
+    </section>
+
+  </div>
+
+  <!-- Bandeau de message défilant : le texte vient du fichier message.txt -->
+  <div id="ticker" class="ticker" style="display:none"><div id="tickerText" class="ticker-text"></div></div>
 </main>
 
 <script>
+  // ============ RÉGLAGES ============
   // Date du dernier accident au format AAAA-MM-JJ.
   // Pour la modifier, changez uniquement la date ci-dessous.
   const DATE_DERNIER_ACCIDENT = "2025-02-11";
+
+  // Durée d'affichage de chaque page (en secondes) : la page d'origine puis la page des alertes, en boucle.
+  const DUREE_PAGE_SECONDES = 60;
+
+  // Vitesse de défilement des alertes (en % de la hauteur d'écran par seconde).
+  const VITESSE_DEFILEMENT = 4;
+
+  // N'afficher que les alertes à partir de cette date (AAAA-MM-JJ). Laisser vide pour toutes les afficher.
+  const ALERTES_DEPUIS = "";
+
+  // Fichier texte contenant le message qui défile en bas de l'écran (placé à côté de index.html).
+  // Une ligne = un message ; les lignes commençant par # sont ignorées ; fichier vide = pas de bandeau.
+  const FICHIER_MESSAGE = "message.txt";
+  // Le fichier est relu régulièrement : un changement s'affiche sans recharger la page (en secondes).
+  const ACTUALISATION_MESSAGE_SECONDES = 30;
+  // Vitesse de défilement du message (en % de la largeur d'écran par seconde).
+  const VITESSE_MESSAGE = 8;
+  // Message affiché si le fichier est introuvable (ex. page ouverte directement depuis un dossier). Laisser vide pour ne rien afficher.
+  const MESSAGE_PAR_DEFAUT = "";
+
+  // ============ DONNÉES : alertes sécurité du site d'Alès (extraction du 29/10/2026), de la plus récente à la plus ancienne ============
+  // n = numéro, t = type, s = statut, d = date, l = lieu, r = nature du risque, g = gravité, x = description, m = mesure conservatoire
+  const ALERTES = [{"n":"AS-006614","t":"Situation dangereuse","s":"En cours","d":"2026-10-27","l":"FOURGONS","r":"Routier/conduite de véhicule","g":"Élevé","x":"Absence de suivi Géolocalisé : lors des chantiers / parfois inaccessible au tel / impossible de connaitre la situation de nos techniciens souvent isolés avec des amplitudes de W larges","m":""},{"n":"AS-006613","t":"Situation dangereuse","s":"En cours","d":"2026-10-27","l":"FAB ALES Chaudronnerie","r":"Incendie/explosion","g":"Élevé","x":"Délai Approvisionnement RG ou matériel spécifique mécaniques hors catalogue RG ( exemple chaussures sourdures / tabliers )","m":""},{"n":"AS-006586","t":"Situation dangereuse","s":"Clôturé","d":"2026-10-16","l":"Magasin","r":"Plain pied/Circulation","g":"Élevé","x":"Rangement caisse intérimaires devant porte accès secours","m":"dplct vers zone rangement"},{"n":"AS-006585","t":"Situation dangereuse","s":"Clôturé","d":"2026-10-16","l":"Parc Production","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Moyen","x":"Absence rangement matériel electrique fin de semaine avant week end : risque dégradation, risque disjonction (intempéries)","m":"Rangement en lieu sec"},{"n":"AS-006521","t":"Situation dangereuse","s":"Clôturé","d":"2026-10-05","l":"Parc DECHETS BOIS","r":"Manutention manuelle - Outillage manuel","g":"Élevé","x":"Clous apparents sur bois posés au sol hors benne .","m":"Retraits des clous et/ou Aplatissement"},{"n":"AS-06223","t":"Situation dangereuse","s":"Clôturé","d":"2026-09-18","l":"Parc de production","r":"Plain pied/Circulation","g":"Élevé","x":"Chute sur objet posé au sol ...","m":"Arret / pause sur le W / remise à plat sur l'organisation des taches et de l'emplacement des outillages"},{"n":"AS-06222","t":"Situation dangereuse","s":"Clôturé","d":"2026-09-18","l":"Parc Chaudronnerie","r":"Equipement sous pression","g":"Élevé","x":"Absence Chaine autour des bouteilles","m":"Ajout Chaines"},{"n":"AS-06221","t":"Situation dangereuse","s":"Clôturé","d":"2026-09-18","l":"Production","r":"Incendie/explosion","g":"Élevé","x":"dates \"Tuyaux alimentation GAZ bouteilles mobiles\" périmée","m":"mise Hors service et non acceesible les boutilles le temps de chgt des tuyaux"},{"n":"AS-06220","t":"Situation dangereuse","s":"Clôturé","d":"2026-09-18","l":"Magasin","r":"Incendie/explosion","g":"Élevé","x":"incendie / Aeration / Stockage hauteur Chute / Armoires Produits chimiques","m":"Suppression des produits déposés . Explication sur Armoire ventilée vers les équipiers / ventilation haute"},{"n":"AS-06130","t":"Situation dangereuse","s":"Clôturé","d":"2026-08-14","l":"porte accès PROD","r":"Plain pied/Circulation","g":"Élevé","x":"Accès porte encombrée","m":"oui. remise en place du matériel. Brief Sécu prise de poste à tous."},{"n":"AS-06128","t":"Presqu’accident","s":"En cours","d":"2026-08-12","l":"PARC DKE FAB ALES","r":"","g":"Faible","x":"Pas d'échauffement des organismes à la prise de poste .","m":""},{"n":"AS-06125","t":"Situation dangereuse","s":"Clôturé","d":"2026-08-11","l":"zone Magasin","r":"Risque mécanique (coincement/écrasement)","g":"Moyen","x":"Entreposage . Chute / 5S","m":"LA mise à disposition d'emabllage et ou de palettes doit suivre la zone dédiée et non un entreposage \"pirate\" meme si temporaire . Rangement fait…"},{"n":"AS-06124","t":"Situation dangereuse","s":"Clôturé","d":"2026-08-11","l":"zone Stock","r":"Plain pied/Circulation","g":"Moyen","x":"chute circulation / sol souillé","m":"Nous avons mis en place une solution de lavettes avec process de nettoiement externalisé . MEWA/ les anciens chiffons ont été utilisés jusqu'à la fin…"},{"n":"AS-06123","t":"Situation dangereuse","s":"Clôturé","d":"2026-08-11","l":"zone STOCK","r":"Chute d'objet","g":"Moyen","x":"Risque de chute /","m":"Nous avons investi dans des racks et autre solutions de manutention : chaque chose à sa place , une place pour chaque chose ... meme temporaire , le…"},{"n":"AS-06122","t":"Situation dangereuse","s":"Clôturé","d":"2026-08-11","l":"parc Zone extérieur Portail","r":"Plain pied/Circulation","g":"Élevé","x":"Incendie / Chute au sol / circulation","m":"La solution MEGO mis en place sur ALES permet de gérer durablement nos déchets (cigarettes) . Cette initiative positive s'est accompagné de la dépose…"},{"n":"AS-06121","t":"Situation dangereuse","s":"Clôturé","d":"2026-08-11","l":"PARC EXTERIEUR","r":"Biologique / Hygiène / Propreté","g":"Moyen","x":"entreposage pots enduits à meme le sol/ péremption","m":"les pots sont issus de contrôles DLUO présents dans le container ATEX. la première intention est bonne mais aurait du conduire à un entreposage sur…"},{"n":"AS-06038","t":"Situation dangereuse","s":"Clôturé","d":"2026-07-02","l":"Site / Chantier","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Élevé","x":"Meuleuse utilisée classique pour découpe Tole : une meuleuse anti projections serait plus adaptée ( risque de projections , départ de feu )","m":"mise en place de \"rideaux\" de soudage autour zone découpe"},{"n":"AS-06029","t":"Presqu’accident","s":"Clôturé","d":"2026-06-30","l":"Toit Poste","r":"Manutention mécanique (engins, levage)","g":"Élevé","x":"Toit \"collée\" par le revetement. Arret levage ( Risque de dégradation toit ou d'impact grue )","m":"oui Arret opération / scellement supprimé manuellement //remonéte Ncf à GENITEC"},{"n":"AS-06025","t":"Situation dangereuse","s":"Clôturé","d":"2026-06-30","l":"Atelier chaudronnerie","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Moyen","x":"Cisaille manuelle non conforme , mise en indisponibilitée depuis 6 mois , levier de coupe cassé et tordu","m":"Remise en etat machine outil pour utilisation en atelier ( soudure chassis apres avoir redressé l’ensemble du levier a pied ,remise en place des vis…"},{"n":"AS-05915","t":"Situation dangereuse","s":"Clôturé","d":"2026-05-27","l":"Zone Production Parc extérieur","r":"Plain pied/Circulation","g":"Élevé","x":"Cable au sol sur touret non visible","m":"Balisage Zone , Réduction distance utile"},{"n":"AS-05914","t":"Situation dangereuse","s":"Clôturé","d":"2026-05-27","l":"Levage Armoire SR SM AIR SET","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"Anneau de levage non proportionné ensemble Armoire","m":"Arrêt opération : décision avec le chargé de ùmanouevre de lever par prise \"panier\""},{"n":"AS-05866","t":"Situation dangereuse","s":"Clôturé","d":"2026-05-05","l":"Parc montage postes","r":"Chute de hauteur","g":"Élevé","x":"Un escabeau a été percuté par une camionette de livraison ,car celui-ci trainait au sol.Si un tech venait a l'utiliser il pourrait tomber au vue de l'etat des pieds","m":"Mise a l'ecart immediate de l’escabeau en zone prison materiel non conforme"},{"n":"AS-05854","t":"Situation dangereuse","s":"Clôturé","d":"2026-04-28","l":"port de charges lourdes","r":"Risque mécanique (coincement/écrasement)","g":"Très élevé","x":"Réception Support nouveau modèle : absence mode opératoire . poids > 100KG","m":"Arret immédiat opération : Brief autour des risques inhérnts . poids >120Kg , risque de chute. Rappel poids charge net risque sur charges > 25KG"},{"n":"AS-05824","t":"Situation dangereuse","s":"Clôturé","d":"2026-04-20","l":"Local compresseur d'air","r":"Risques électriques","g":"Élevé","x":"Compresseur tourne en permanence car tuyau de charge reseau d'air de l'atelier en sortie de compresseur HS","m":"Arret immediat du compresseur et remise en etat du tuyau de charge reseau d'air avec 2 colliers de serrage a la place du precedent"},{"n":"AS-05713","t":"Situation dangereuse","s":"En cours","d":"2026-03-27","l":"LAFONT STOCKAGE","r":"","g":"Faible","x":"Absence d'éléments amont sur les levages : poids approximatif, pas d'adéquation rédigée en amont , besoin de formation complémentaire urgente sur l'ensemble de la chaine logistique","m":"Rappel à chaque levage des risques, TOP ,"},{"n":"AS-05643","t":"Situation dangereuse","s":"Clôturé","d":"2026-03-16","l":"Zone grillagée stock goulotte","r":"Chute d'objet","g":"Élevé","x":"Planche de rayonnage","m":"Rangement des differents elements a l'endroit prevu"},{"n":"AS-05642","t":"Situation dangereuse","s":"Clôturé","d":"2026-03-16","l":"Atelier cote magazin","r":"Risques électriques","g":"Élevé","x":"Fiche de rallonge ecrasée ,HS","m":"Changement de la fiche du derouleur"},{"n":"AS-05641","t":"Situation dangereuse","s":"Clôturé","d":"2026-03-16","l":"Zone stock geillagé","r":"Chute d'objet","g":"Très élevé","x":"Barres de cuivre trop longue","m":"Mise a plat des barres de cuivre et decoupe en 2 longueur pour eviter leur chute puis remise en stock verticale"},{"n":"AS-05602","t":"Situation dangereuse","s":"Clôturé","d":"2026-03-06","l":"Porte pietonne 2 cote chaudronnerie","r":"Plain pied/Circulation","g":"Très élevé","x":"Evacuation et circulation pietonne impossible","m":"Evacuation des objets et autres encombrants devant et derriere la porte pour permettre la curculation"},{"n":"AS-05535","t":"Presqu’accident","s":"Clôturé","d":"2026-02-25","l":"PARC ALES","r":"Manutention mécanique (engins, levage)","g":"Élevé","x":"Absence MACARON VGP malgré conformité : QRCODE illisible pour les équipes !","m":"ECHANGES APAVE CORRECTIF Nous avons récemment réalisé les contrôles réglementaires de nos matériels de levage et gerbeurs par vos services. (…"},{"n":"AS-05534","t":"Situation dangereuse","s":"En cours","d":"2026-02-25","l":"PARC DKE FAB","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"Levage / Ecrasement POIDS ID","m":"TOP / BRIEF SECU /IDENTIFCATION ADEQUATION POIDS / CHARGE / CONTREPOIDS LE document d'adéquation de charge est mal interprété par les équipes :…"},{"n":"AS-05513","t":"Situation dangereuse","s":"Clôturé","d":"2026-02-20","l":"Enrouleur fixe rallonge chaudronnerie cote etabli chargeurs…","r":"Risques électriques","g":"Élevé","x":"Fiche femelle hs et cable abimé","m":"Separation de l'alimentation et reparation immediate ,changement de la fiche et remise en etat du serre cable"},{"n":"AS-05441","t":"Situation dangereuse","s":"Clôturé","d":"2026-02-03","l":"Salle Refectoire","r":"Biologique / Hygiène / Propreté","g":"Élevé","x":"Défaut entretien / Vivre ensemble ; frigidaire refectoire","m":"Nettoyage immédiat (RUP) / Tout produit DLUO dépassé à la poubelle ."},{"n":"AS-05416","t":"Situation dangereuse","s":"Clôturé","d":"2026-01-22","l":"Stockage Mag","r":"Chimique (inhalation, contact, projection)","g":"Élevé","x":"Absence etiquette Produit ( FDS )","m":"Isolement des pots"},{"n":"AS-05288","t":"Situation dangereuse","s":"Clôturé","d":"2025-12-12","l":"CHEMI NDU VIGET CHANTIER","r":"Routier/conduite de véhicule","g":"Élevé","x":"ABSENCE BALISAGE dans le CAMION CHANTIER","m":"DEPLACEMENT CAMION"},{"n":"AS-05244","t":"Situation dangereuse","s":"Clôturé","d":"2025-12-01","l":"PARC PRODUCTION","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Élevé","x":"ABSENCE DATE FABRICATION DISQUE FLAP/LAMELLES","m":"RETRAIT DU DISQUE en REF"},{"n":"AS-05238","t":"Situation dangereuse","s":"Clôturé","d":"2025-11-28","l":"Production","r":"Chute de hauteur","g":"Élevé","x":"Accessoire PIRL/Escabeau non conforme","m":"Retrait de l'escabeau en zone NC . Contrôle de l'ensemble des Moyens d'accès. Causerie"},{"n":"AS-05215","t":"Situation dangereuse","s":"Clôturé","d":"2025-11-21","l":"zone peinture","r":"Chimique (inhalation, contact, projection)","g":"Élevé","x":"POTS RECIPENTS CONTENANTS avec produits type peinture absent de bac de retentions","m":"Suppresion armoire non confirme . Une armoire coupe feu dédiée avec bascs est présente ."},{"n":"AS-05214","t":"Situation dangereuse","s":"Clôturé","d":"2025-11-21","l":"POSTE HTA PARC","r":"Risque mécanique (coincement/écrasement)","g":"Élevé","x":"PORTE ACCES TFO LAISSEE OUVERTE ( fermeture absence collier ou ecrou ) . fin de semaine, les accès postes durantles travaux doivent etre vérifiés ( grand vent). Risque de dégradation du poste et potentiel risque coincement ou…","m":"Fermeture par collier"},{"n":"AS-05171","t":"Situation dangereuse","s":"Clôturé","d":"2025-11-10","l":"Remorque camion","r":"Manutention mécanique (engins, levage)","g":"Élevé","x":"Les 2 postes P10 sont trop près l'un de l'autre sur la remorque donc risque de choc au levage.","m":""},{"n":"AS-05161","t":"Situation dangereuse","s":"Clôturé","d":"2025-11-07","l":"porte de secours piétonne 1 côté magasin","r":"Plain pied/Circulation","g":"Élevé","x":"porte encombrée par un barnum ,evacuation en cas d'alerte difficile","m":"evacuation du barnum pour libéré le passage"},{"n":"AS-05043","t":"Situation dangereuse","s":"Clôturé","d":"2025-10-10","l":"PARC FABRICATION EXTERIEUR POSTE","r":"Risques électriques","g":"Moyen","x":"OUTIL ELECTRIQUE LAISSE A L EXTERIEUR : RISQUE DETERIORATION EQPT","m":"RANGMENT DE L'ASPIRATEUR EN LIEU FERME"},{"n":"AS-05038","t":"Situation dangereuse","s":"Clôturé","d":"2025-10-09","l":"BENNE DIB","r":"Biologique / Hygiène / Propreté","g":"Moyen","x":"TRI DECHETS BENNE DIB","m":"TRI BENNE DIB et mis à l'écarts des déchets non conformes"},{"n":"AS-05030","t":"Situation dangereuse","s":"Clôturé","d":"2025-10-08","l":"ZONE CHAUDRONNERIE","r":"Chimique (inhalation, contact, projection)","g":"Moyen","x":"ABSENCE REFERENCE BIDON sur nature COMPOSANT","m":"SUPPRESSION DU BAC."},{"n":"AS-05029","t":"Presqu’accident","s":"Clôturé","d":"2025-10-08","l":"LOCAL PEINTURE","r":"Biologique / Hygiène / Propreté","g":"Élevé","x":"ABSENCE RETENTION TEMPORAIRE POT PEINTURE","m":"Déplacement pots dans local sous retention"},{"n":"AS-04976","t":"Situation dangereuse","s":"Clôturé","d":"2025-09-24","l":"atelier","r":"Chute de hauteur","g":"Élevé","x":"une roulette manquante sur une PIRL en service en prod","m":"mise a l'ecart de la PIRL en zone materiel non conforme vers magazin"},{"n":"AS-04974","t":"Situation dangereuse","s":"Clôturé","d":"2025-09-23","l":"ACCES ROUTE SITE","r":"Routier/conduite de véhicule","g":"Moyen","x":"ABSENCE ELAGAGE ACCES SITE","m":"Courrier vers Agglo et Mairie ."},{"n":"AS-04973","t":"Situation dangereuse","s":"Clôturé","d":"2025-09-23","l":"DKE FAB ALES","r":"Heurt - Choc","g":"Moyen","x":"Usure des EPI et spécifiquement des genouillères","m":"COMMANDE de NOUVELLES GENOUILLERES"},{"n":"AS-04972","t":"Situation dangereuse","s":"Clôturé","d":"2025-09-23","l":"LA ROYA CLERMONT","r":"Chute de hauteur","g":"Très élevé","x":"Utilisation Echelle sur une activité hors DKE par une société externe . Vigilance partagée .","m":"Information du technicien sur l'echelle du risque , appel à déplacer l'echelle et à sécuriser l'accès"},{"n":"AS-04900","t":"Situation dangereuse","s":"Clôturé","d":"2025-08-29","l":"Sur le parc","r":"Heurt - Choc","g":"Moyen","x":"Risque de rouler sur les chutes de câble devant le poste.","m":""},{"n":"AS-04865","t":"Situation dangereuse","s":"Clôturé","d":"2025-08-18","l":"atelier","r":"Risques électriques","g":"Élevé","x":"Prise enrouleur avec fils visible et non etanche","m":"Reprise de la prise"},{"n":"AS-04864","t":"Situation dangereuse","s":"Clôturé","d":"2025-08-18","l":"porte atelier","r":"Plain pied/Circulation","g":"Moyen","x":"Cartons+ dérouleur de câble dans la porte d'accès atelier et de la commande de la trappe de désenfumage","m":"retrait des équipements qui encombrent la porte"},{"n":"AS-04863","t":"Situation dangereuse","s":"Clôturé","d":"2025-08-18","l":"atelier","r":"Plain pied/Circulation","g":"Moyen","x":"Déchets plastiques entassés dans l'atelier.","m":"-Poubelle plastique mis en ballot dans la benne DIB - Mise en place d'une zone de déchets plastiques avec affichage"},{"n":"AS-04777","t":"Situation dangereuse","s":"Clôturé","d":"2025-07-23","l":"cabine peinture","r":"Incendie/explosion","g":"Très élevé","x":"extincteur poudre obstrué par une armoire tgbt stockée devant","m":"dégagement du tgbt dans sa zone dédiée"},{"n":"AS-04776","t":"Situation dangereuse","s":"Clôturé","d":"2025-07-23","l":"porte evacuation de secours chaudronnerie","r":"Plain pied/Circulation","g":"Élevé","x":"la porte ne s'ouvre que de moitié suite à un dérouleur de cable stocké derrière donc evacuation com","m":"dégagement du dérouleur à son endroit dédié dans l'atelier"},{"n":"AS-04747","t":"Situation dangereuse","s":"Clôturé","d":"2025-07-17","l":"ATELIER","r":"Heurt - Choc","g":"Élevé","x":"Chaine du pont dans le passage piéton et engin. Risque de choc / dégradation matériels (Gerbeur + chaine)","m":"Mise sur le coté des chaines dans une zone de non passage"},{"n":"AS-04723","t":"Situation dangereuse","s":"Clôturé","d":"2025-07-08","l":"perceuse à colonne chaudronnerie","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Élevé","x":"carter de protection inexistant","m":"remise en place d'un carter de protection avant utilisation de la perceuse à colonne"},{"n":"AS-04720","t":"Situation dangereuse","s":"Clôturé","d":"2025-07-07","l":"rack de stockage élingues exterieur","r":"Risque mécanique (coincement/écrasement)","g":"Élevé","x":"Le rack est tombé dans une zone où il y a potentiellement du personnel en transit ou en prod","m":"dégagement des élingues et autres chaînes de levage pour permettre la remise en place et renforcer les fixations du rack pour que celui_ci soit…"},{"n":"AS-04696","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-30","l":"BATIMENT ACCES","r":"Chute d'objet","g":"Très élevé","x":"Entreposage Bois de grande Longueur Porte Sortie","m":"dépose au sol et retrait porte sortie"},{"n":"AS-04695","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-30","l":"Parc","r":"Biologique / Hygiène / Propreté","g":"Moyen","x":"Tri non conforme","m":"Rappel et lancement Ordre et propreté"},{"n":"AS-04694","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-30","l":"parc POSTES","r":"Risque mécanique (coincement/écrasement)","g":"Élevé","x":"Porte Poste de Loc non fermée / Tape Poste béton","m":"oui Calage porte / Fermeture HS"},{"n":"AS-04693","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-30","l":"parc ALES","r":"Incendie/explosion","g":"Élevé","x":"Cendrier Plein !","m":"Vidage du contenant . et causeries sur lieux fumeur sur site"},{"n":"AS-04656","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-16","l":"PARC PRODUCTION","r":"Biologique / Hygiène / Propreté","g":"Faible","x":"ETABLI LAISSE DEHORS : VEILLE DE WEEK END","m":"ETABLI RENTRE dans le SITE"},{"n":"AS-04651","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-12","l":"parking","r":"Plain pied/Circulation","g":"Moyen","x":"véhicule gare en marche avant","m":"Communication de l'importance de se garer en marche arrière Véhicule déplacé et garé en marche arrière"},{"n":"AS-04634","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-06","l":"PARC PRODUCTION","r":"Incendie/explosion","g":"Élevé","x":"Chalumeau laissé sur parc plein soleil veille de week end","m":"Retrait du chalumeau pour stockage dans zone tempérée ( local )"},{"n":"AS-04613","t":"Situation dangereuse","s":"Clôturé","d":"2025-06-02","l":"coffret prises de services vers Portail côté porte pietonne","r":"Risques électriques","g":"Élevé","x":"risque choc électrique, adaptateur prises cassé et fondu","m":"mise au rebut de l'adaptateur HS et mise en place d'un nouveau , conforme"},{"n":"AS-04558","t":"Presqu’accident","s":"Clôturé","d":"2025-05-14","l":"Sur le toit d'un poste en provenance de Genitec","r":"Chute d'objet","g":"Très élevé","x":"Pince coupante retrouvée sur le toit d'un poste en provenance de Genitec par le magasinier.","m":""},{"n":"AS-04554","t":"Situation dangereuse","s":"En cours","d":"2025-05-14","l":"Zone peinture","r":"Chimique (inhalation, contact, projection)","g":"Élevé","x":"Absence de fontaine à solvants : Nettoiement accessoires à risques ( environnement, hygiène, sécurité) . Risque Incendie","m":"Limitation des peinture sur site ( externalisation) et utilisation peinture aqueuse. mais toujours présence solvant et peinture/résine solvantée sur…"},{"n":"AS-04544","t":"Situation dangereuse","s":"Clôturé","d":"2025-05-07","l":"Parc DKE FAB ALES","r":"Chute de hauteur","g":"Très élevé","x":"Client sur toit SKID ( Ingé MECA vérification accessoires présent sur toiture . )","m":"Rappel des règles pour TOUS : clients y compris . Malgré les PDP, et autres rappels sécurité, le client doit aussi se conformer à nos règles ."},{"n":"AS-04543","t":"Situation dangereuse","s":"Clôturé","d":"2025-05-07","l":"Site DKE FAB","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"Chargement , Chaine (CMU plaque NC)","m":"Arret Levage . Conttact avec la direction du prestataire . Solution de repli : attente chaine conformes pour reprendre l'action"},{"n":"AS-04359","t":"Situation dangereuse","s":"Clôturé","d":"2025-03-13","l":"zone production : Zone Rgt outillage portatif","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Très élevé","x":"outil en mauvais etat","m":"Meuleuse réquisitionnée pour explication avec Tech \"proprietaire\" / Causerie sera menée par le tech vers toute l'equipe"},{"n":"AS-04358","t":"Situation dangereuse","s":"Clôturé","d":"2025-03-13","l":"Open Space","r":"Risque mécanique (coincement/écrasement)","g":"Très élevé","x":"La broyeuse à papier reste sous-tension lorsqu'on ouvre le bac pour vider les résidus papier.","m":"Mise en place d'une étiquette alertant le danger."},{"n":"AS-04311","t":"Situation dangereuse","s":"En cours","d":"2025-02-28","l":"Poste HTA Accès sous bassement et Accès TFO","r":"Chute de hauteur","g":"Élevé","x":"Accès BT Haueur TFO et soubassement BT","m":""},{"n":"AS-04278","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-21","l":"ZONE DECHETS ALES","r":"Chimique (inhalation, contact, projection)","g":"Moyen","x":"absence bac reténtion PALLOX DECHETS SOUILLES","m":"Alerte et correction reprise activité sous 24h."},{"n":"AS-04277","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-21","l":"PARKING et ALLEES AUTOUR PARKING DKE FAB","r":"Biologique / Hygiène / Propreté","g":"Faible","x":"DECHETS AU SOL","m":"Ramassage des dechets Parking DKE et causerie autour du sujet ."},{"n":"AS-04220","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-08","l":"ZONE MATERIEL VISSERIE","r":"Plain pied/Circulation","g":"Moyen","x":"Chute plain pied","m":"RANGEMENT"},{"n":"AS-04219","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-08","l":"PARC ZONE POSTE","r":"Plain pied/Circulation","g":"Moyen","x":"PRISE AU SOL / RISQUE DETRIORATION et PRISE dans flaque EAU/ Electrusation","m":"Love du cable et rangement"},{"n":"AS-04218","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-08","l":"POSTE BETON 240","r":"Ambiances de travail","g":"Moyen","x":"POSTE BETON PORTE","m":"FERMETURE PORTE TEMPORAIRE / EQUIPEMENTS PRESENTS RISQUE dégradation PLUIE ."},{"n":"AS-04217","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-08","l":"BENNE METAL","r":"Biologique / Hygiène / Propreté","g":"Moyen","x":"DECHET SOUILLE DANGEREUX","m":"RETRAIT BIDON et TRT SOUS RECYCLAGE SPECIALISE et TRT TRACKDECHETS"},{"n":"AS-04215","t":"Situation dangereuse","s":"Clôturé","d":"2025-02-07","l":"parc montage postes","r":"Incendie/explosion","g":"Élevé","x":"fiche 230V HS sur rallonge branchée à un coffret (fondue et cassée)","m":"déconnexion de la rallonge et changement immédiat de la fiche 230V pour remise en conformité et utilisation"},{"n":"AS-04153","t":"Situation dangereuse","s":"Clôturé","d":"2025-01-20","l":"CABINE PEINTURE","r":"Biologique / Hygiène / Propreté","g":"Élevé","x":"ETAT FILTRES CABINE NON CONFORMES","m":"EXTERNALISATION PEINTURE , et mise à plat APPROS FILTRES pour REMISE EN CONFORMITE ( filtrs présents historiques ref non conformes )"},{"n":"AS-04151","t":"Situation dangereuse","s":"Clôturé","d":"2025-01-20","l":"EXTERIEUR SITE","r":"Biologique / Hygiène / Propreté","g":"Moyen","x":"DECHETS SOL / VEHICULES PRESNTS WEEK END","m":"CONTACT MAIRIE et POLICE MUNICIPALE"},{"n":"AS-04118","t":"Situation dangereuse","s":"Clôturé","d":"2025-01-07","l":"bureau Étage BE exe + automatisme","r":"Ambiances de travail","g":"Moyen","x":"climatisation en panne","m":"chauffage d'appoint apporter par le personnel car aucune solution apporter"},{"n":"AS-04074","t":"Situation dangereuse","s":"Clôturé","d":"2024-12-17","l":"container stockage peinture ,solvant ,diluant","r":"Asphyxie/anoxie/espace confiné/ travailleur isolé","g":"Élevé","x":"zone ATEX","m":"mise en place de grilles de ventilations par ventilation naturelle pour permettre de limiter la quantité des gaz présent dans le container"},{"n":"AS-04066","t":"Situation dangereuse","s":"Clôturé","d":"2024-12-13","l":"Parc extérieur","r":"Utilisation des équipements de travail (outillage électroportatif, machines)","g":"Moyen","x":"Pointe de tournevis qui traverse les poches des pantalon","m":"Le tournevis à été enlevé de la poche"},{"n":"AS-04063","t":"Situation dangereuse","s":"Clôturé","d":"2024-12-13","l":"portail 1 atelier","r":"Risques électriques","g":"Élevé","x":"boitier de commande Portail arraché","m":"condamnation ,consignation et changement du boitier"},{"n":"AS-04056","t":"Situation dangereuse","s":"Clôturé","d":"2024-12-13","l":"ZONE LEVAGE / ARMOIRES","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"SANGLE DEFFECTEUSE HS","m":"SANGLE DETRUITE / JETEE"},{"n":"AS-04018","t":"Situation dangereuse","s":"Clôturé","d":"2024-12-05","l":"bureau etage","r":"","g":"Faible","x":"sol détérioré","m":""},{"n":"AS-04015","t":"Situation dangereuse","s":"Clôturé","d":"2024-12-05","l":"Revêtement de sol hs","r":"Plain pied","g":"Moyen","x":"Pied coincé dans le revêtement de sol","m":""},{"n":"AS-03846","t":"Situation dangereuse","s":"Clôturé","d":"2024-10-30","l":"Zone stockage magasin","r":"Chute d'objet","g":"Élevé","x":"les extracteurs stockés à côté du rack commencent à s'affaisser et à devenir instable ( risque de chute du matériel)","m":"Mise en place balisage + action corrective magasin"},{"n":"AS-03845","t":"Situation dangereuse","s":"Clôturé","d":"2024-10-30","l":"DKE FAB","r":"Chimique (inhalation, contact, projection)","g":"Élevé","x":"Manque etiquetage produit","m":"Etiquette apposée avec reference (eau savonneuse)"},{"n":"AS-03790","t":"Situation dangereuse","s":"Clôturé","d":"2024-10-15","l":"Bureau, rez-de-chaussée","r":"Heurt - Choc","g":"Moyen","x":"Grille d'aération, posée au sol depuis plusieurs jours","m":"Grille déplacée et posée sur une table"},{"n":"AS-03769","t":"Situation dangereuse","s":"Clôturé","d":"2024-10-10","l":"parc montage ales coté bureau","r":"Risques électriques","g":"Moyen","x":"tableau de prises arraché du bardage ce qui peut provoquer un sectionnement des fils elec","m":"remise en état de la fixation du coffret et ctrl de l'état des fils elec avant remise en service"},{"n":"AS-03663","t":"Situation dangereuse","s":"Clôturé","d":"2024-09-11","l":"PORTAIL DKE FAB","r":"Risque mécanique (coincement/écrasement)","g":"Élevé","x":"Lampe Eclairage ouverture portail HS ( NC Feu clignotant )","m":"Prose de ref pour remplacement dans les 48h"},{"n":"AS-03648","t":"Situation dangereuse","s":"Clôturé","d":"2024-09-09","l":"Chargement Fourgon","r":"Routier/conduite de véhicule","g":"Élevé","x":"Surcharge / Maintien Charge Fourgon","m":"Déchargement Fourgon / Pesage de l'ensemble / limitation de l'utile et uniquement utile."},{"n":"AS-03620","t":"Situation dangereuse","s":"Clôturé","d":"2024-08-27","l":"Parc STOCKAGE EXTERIEUR POSTE HTA","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"Absence PORT EPI Chauffeur CHEVRIER Groupe CAPELLE (Chargement poste sur Semi )","m":"Arrët du chargement / Rappel des règles / Demande de correction immédiat avant reprise."},{"n":"AS-03573","t":"Presqu’accident","s":"Clôturé","d":"2024-08-01","l":"Container METAL LER 240194","r":"Chute de hauteur","g":"Moyen","x":"Chute de la PIRL lors de la mise en place d'une goulotte en hauteur container + tirage câble terre (collaborateur retombé sur ses pieds)","m":"Consignation de la PIRL ainsi que les autres du même modèle Préconisation de travailler en face de la PIRL"},{"n":"AS-03509","t":"Presqu’accident","s":"Clôturé","d":"2024-07-18","l":"Entrepôt DKE Fab 1 Alès","r":"Chute d'objet","g":"Élevé","x":"Chute d'une armoire TGBT de 50cm de hauteur lors de son chargement à l'aide du gerbeur (impact matériel minime, aucun impact humain)","m":"Rappel sur l'utilisation du moyen de levage préconisé pour la manutention des armoires TGBT"},{"n":"AS-03390","t":"Situation dangereuse","s":"Clôturé","d":"2024-06-18","l":"Bureaux","r":"","g":"Faible","x":"Les bureaux et le matériel ne sont pas rangés","m":""},{"n":"AS-03389","t":"Situation dangereuse","s":"Clôturé","d":"2024-06-18","l":"Cour, au milieu, à côté des postes","r":"","g":"Faible","x":"Rampe non conforme, ne pas utiliser","m":""},{"n":"AS-03388","t":"Situation dangereuse","s":"Clôturé","d":"2024-06-18","l":"Cour, parc de stockage","r":"","g":"Faible","x":"Visserie qui traîne au sol, autour des postes (crevaisons possibles)","m":""},{"n":"AS-03386","t":"Situation dangereuse","s":"Clôturé","d":"2024-06-17","l":"Chariot 6t","r":"Manutention mécanique (engins, levage)","g":"Élevé","x":"Roue avant gauche dégonflée presque sorti de la jante vu par le magasinier avant l'intervention lors du contrôle journalier","m":"Mise à l'arrêt du chariot avec retrait des clés immédiat"},{"n":"AS-03379","t":"Situation dangereuse","s":"Clôturé","d":"2024-06-13","l":"Porte entrée atelier","r":"Autre","g":"Moyen","x":"Palette posée devant une issue de secours","m":"Retrait immédiat de la palette pour la mettre en zone de stockage"},{"n":"AS-03192","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-15","l":"Stock transformateur","r":"Heurt - Choc","g":"Élevé","x":"Plaque transformateur en position horizontale dans le couloir, risque de coupure.","m":"Plaque remise"},{"n":"AS-03151","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Cour, parking voitures","r":"","g":"Faible","x":"Pas d'éclairage extérieur sur la parking","m":""},{"n":"AS-03150","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Atelier","r":"","g":"Faible","x":"Outils, appareils à ranger après utilisation","m":""},{"n":"AS-03149","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Atelier, porte de secours","r":"","g":"Faible","x":"Sortie de secours bloquée à l'extérieur","m":""},{"n":"AS-03148","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Atelier, zone de stockage des transformateurs","r":"Chute d'objet","g":"Moyen","x":"Bidon de nettoyant (sans étiquette) posé sur un transformateur","m":"Le bidon a été enlevé"},{"n":"AS-03147","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Cour, bennes","r":"","g":"Faible","x":"Tri des cartons et plastiques","m":""},{"n":"AS-03146","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Cour, benne métal","r":"","g":"Faible","x":"Déchets trop volumineux et encombrants, à démanteler","m":""},{"n":"AS-03145","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Parc de stockage et atelier","r":"Plain pied/Circulation","g":"Faible","x":"Papiers et chiffons qui trainent dans l'atelier sur le parc","m":"Papiers et chiffons ont été rangés ou jetés"},{"n":"AS-03144","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Cour de stockage","r":"Plain pied/Circulation","g":"Faible","x":"Déchets de câbles au sol","m":"Câbles rangés dans la zone dédiée"},{"n":"AS-03143","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Atelier, chariot élévateur","r":"Autre","g":"Faible","x":"Clé du chariot sur le contact","m":"Clé enlevée"},{"n":"AS-03139","t":"Situation dangereuse","s":"Clôturé","d":"2024-04-03","l":"Portail","r":"Autre","g":"Faible","x":"Vendredi 17h : portail toujours ouvert, bloqué par un cône de chantier","m":"Le cône a été enlevé pour que le portail puisse se fermer."},{"n":"AS-03103","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-27","l":"Poste Sandaya 230951","r":"Heurt - Choc","g":"Moyen","x":"Le ferraillage du béton dépasse anormalement.","m":"ferraillage coupé à la pince"},{"n":"AS-03077","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Dans la cour","r":"Chimique (inhalation, contact, projection)","g":"Moyen","x":"Technicien porte un masque FFP3 plusieurs jours","m":"Masque jeté et changé. Jeter son masque après utilisation."},{"n":"AS-03076","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Fond de la cour, containers de peinture","r":"Asphyxie/anoxie/espace confiné/ travailleur isolé","g":"Élevé","x":"Containers de peinture n'ont pas d'aération","m":"Création / achat d'une grille anti-rongeurs + ouverture face avant"},{"n":"AS-03075","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Atelier, racks de dérouleurs","r":"","g":"Faible","x":"16 tiges (2*8) sortent du sol","m":""},{"n":"AS-03074","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Dans la zone de stockage des postes de location","r":"","g":"Faible","x":"Plaques Duripanel non stockées (humidité)","m":""},{"n":"AS-03072","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Dans la zone de stockage des postes de location","r":"","g":"Faible","x":"Béton sur les parois d'un poste de location","m":""},{"n":"AS-03071","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Atelier, zone de préparation du magasin","r":"Heurt - Choc","g":"Moyen","x":"Goulottes dépassent du caddie","m":"Décision de ne plus mettre les gros éléments dans les caddies, les techniciens vont les chercher dans le magasin."},{"n":"AS-03070","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Cour, près de la zone de lavage","r":"","g":"Faible","x":"Echafaudage roulant pas réparé (malgré réception du matériel)","m":""},{"n":"AS-03069","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-20","l":"Stock de bennes, à côté du portail","r":"Biologique / Hygiène / Propreté","g":"Faible","x":"Bidon de lave-glace trouvé dans la benne de papier","m":"Le bidon a été enlevé. Rappel lors de la causerie du vendredi 22/03."},{"n":"AS-03065","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-19","l":"coffret prises extérieur côté portail stock","r":"Risques électriques","g":"Élevé","x":"lors du débranchement de la rallonge l'adaptateur fiche elec 230v c'est ouverte ,choc elec possible","m":"mise en place d'un adaptateur 230v conforme et mise au rebut du defaillant"},{"n":"AS-03013","t":"Situation dangereuse","s":"Clôturé","d":"2024-03-07","l":"Dans la cour, près de la porte atelier.","r":"Heurt - Choc","g":"Élevé","x":"En circulant, il est facile de prendre l'équerre métallique au visage.","m":"Chariot déplacé + papier bulle sur l'équerre."},{"n":"AS-02666","t":"Situation dangereuse","s":"Clôturé","d":"2023-12-28","l":"Parking / Zones extérieures","r":"Co-activité","g":"Faible","x":"Déchets réfupérés en 10 mn autour du site","m":"Création Ordre et propreté immédiate : action propreté réalisée avec l'équipe."},{"n":"AS-02358","t":"Situation dangereuse","s":"Clôturé","d":"2023-11-08","l":"Escalier atelier","r":"Plain pied/Circulation","g":"Élevé","x":"Cablofils qui reposé sur le passage dans les escaliers","m":"Retrait du cablofils"},{"n":"AS-02334","t":"Situation dangereuse","s":"Clôturé","d":"2023-11-03","l":"Baie informatique","r":"Autre","g":"Élevé","x":"Le non-respect des règles de câblage de baie serveur ou de brassage informatique conduit à des risques au maintien en condition opérationnelle de l'infra. : Le risque de panne est accru et sur Alès les pannes sont trop nombreuses.","m":"Intervention Remise au propre Baie informatique : Changement des jarretières déffectueuses , identification par unités, mise au propre ( code…"},{"n":"AS-02292","t":"Situation dangereuse","s":"Clôturé","d":"2023-10-27","l":"Magasin zone grillagée","r":"","g":"Faible","x":"Néon décroché tient par les fils + en équilibre sur une planche.","m":"Alerte apposée"},{"n":"AS-02211","t":"Presqu’accident","s":"Clôturé","d":"2023-10-17","l":"POSTE 230568","r":"Chute de hauteur","g":"Élevé","x":"Plancher mis en place par GENITEC avec une absence de cornière sur le plancher au fond du poste. Ce qui a entrainé un basculement du technicien qui voulait prendre les cotes pour la pose de la cellule.","m":"Retrait du plancher dangereux"},{"n":"AS-01914","t":"Situation dangereuse","s":"Clôturé","d":"2023-08-07","l":"accès cabine à peinture","r":"Plain pied/Circulation","g":"Élevé","x":"présence d'huile au sol suite à une fuite de vérin sur le chariot élévateur","m":"nettoyage de la zone"},{"n":"AS-01889","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-27","l":"zone charge chariot elec","r":"Heurt - Choc","g":"Élevé","x":"fourche chariot mal positionnée, on peut se faire une cheville","m":"mise en bonne position immédiate des fourches rappel :lors du stockage du chariot on doit s'assurer que celles-ci sont au contact du sol en bout de…"},{"n":"AS-01883","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-26","l":"Zone de production DKE FAB 1 / Zone Cablage Tableautin","r":"Risque mécanique (coincement/écrasement)","g":"Élevé","x":"NC perceuse à colonne non scellée au sol / manque Panneaux risques MODOP","m":"Mise en place Affiches Risques/Mode opératoire/Check contrôles avant/après utilisation ( merci Thomas Bernard). Scellement au sol de l'équipement"},{"n":"AS-01862","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-20","l":"Poste de location SITE DKE FAB","r":"Risques électriques","g":"Très élevé","x":"Manque signalétique sous tension","m":"Les essais de postes de locations nécessitent une mise sous tension pour simuler le bon fonctionnement ( centrale d'essais qui génère un tension HT…"},{"n":"AS-01861","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-20","l":"Sortie de secours","r":"Plain pied/Circulation","g":"Moyen","x":"Plan d'évacuation non à jour","m":"Nettoyage et mise à jour immédiat"},{"n":"AS-01839","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-13","l":"Poste 230061","r":"","g":"Faible","x":"Une dallette béton d'obscuration du passage d'homme est trop large et ne rentre pas dans sa réservation (Chute de plein pied)","m":"Enlèvement de la dallette pour réajustage et mise en place d'un panneau pour boucher la réservation ouverte"},{"n":"AS-01820","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-06","l":"atelier","r":"Manutention mécanique (engins, levage)","g":"Élevé","x":"pneu chariot elevateur","m":""},{"n":"AS-01811","t":"Situation dangereuse","s":"Clôturé","d":"2023-07-04","l":"DKE FAB ALES 1","r":"Bruit/vibration","g":"Moyen","x":"Bruit Prévention Contrôle","m":"Rappel sur le port des EPI : bouchons et bouchons moulés pour la PRODUCTION. NE pas s'autoreferencer sur le niveau de bruit ambiant"},{"n":"AS-01744","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-21","l":"devant la cabine à peinture","r":"Autre","g":"Élevé","x":"trace d'huile au sol devant la cabine à peinture , risque de chute","m":"nettoyage de la zone"},{"n":"AS-01722","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-19","l":"salle reunion","r":"Chute d'objet","g":"Élevé","x":"caniveau","m":"pas d e matos"},{"n":"AS-01718","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-16","l":"Zone PEINTURE","r":"Incendie/explosion","g":"Élevé","x":"Entreposage de pots peinture à même le sol","m":"Suppression de tous les pots ouverts et absents de tout bac de rétention ( destination trt CHIMIREC )"},{"n":"AS-01665","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-09","l":"Zone PEINTURE","r":"Biologique / Hygiène / Propreté","g":"Très élevé","x":"Propreté / Risque Incendie / Environnement","m":"Entretien avec prestataire Peinture sur l'organisation des pots/dechets."},{"n":"AS-01650","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-08","l":"POSTE / TRANSFO / ACCES BT","r":"Chute de hauteur","g":"Élevé","x":"Position de W inadapté","m":"Accès Escabeau limité exclusivement encadrement qui permet de rendre le W en BT supervisé."},{"n":"AS-01642","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-07","l":"Entrées poste","r":"Plain pied/Circulation","g":"Élevé","x":"Presence de gaine devant la porte HTA du poste + câbles client au milieu du poste","m":""},{"n":"AS-01621","t":"Situation dangereuse","s":"Clôturé","d":"2023-06-02","l":"porte secours portail 2 côté cabine peinture","r":"Plain pied/Circulation","g":"Très élevé","x":"porte bloquée à l'extérieur par une PIRL mal rangée","m":"évacuation immédiate de la PIRL"},{"n":"AS-01580","t":"Situation dangereuse","s":"Clôturé","d":"2023-05-24","l":"Parking / Zone Grutage poste / Stockage postes","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"Absence DICT / Position des Rx enterrés ( GAZ, ELEC, EAU , EU ) / Pas de connaissance nature du sol","m":"TOP mise en place . Arret grutage pour repositionner la grue ."},{"n":"AS-01489","t":"Situation dangereuse","s":"Clôturé","d":"2023-04-26","l":"Atelier","r":"Manutention mécanique (engins, levage)","g":"Faible","x":"CMU mauvaise 1 T au lieu de 10","m":""},{"n":"AS-01477","t":"Situation dangereuse","s":"Clôturé","d":"2023-04-24","l":"Presse plieuse à PIIC","r":"Risques électriques","g":"Moyen","x":"Bouton marche sortie de son emplacement , obliger d’ouvrir l’armoire électrique pour démarrer","m":""},{"n":"AS-01438","t":"Presqu’accident","s":"Clôturé","d":"2023-04-14","l":"Atelier CHAUDRIONNERIE","r":"Manutention manuelle - Outillage manuel","g":"Élevé","x":"SITE DKE FAB PIIC","m":"Point avec l'équipe / Causeries Réunion Ordre et propreté à caler sur site PIIC . Définition d'une action 5S immédiate : Rangement , ¨Plan de travail…"},{"n":"AS-01388","t":"Situation dangereuse","s":"Clôturé","d":"2023-04-06","l":"atelier Chaudronnerie","r":"Risques électriques","g":"Moyen","x":"risque électrique et incendi","m":"consignation et dépose de la prise defectueuse"},{"n":"AS-01373","t":"Situation dangereuse","s":"Clôturé","d":"2023-04-03","l":"Chaudronnerie piic","r":"","g":"Faible","x":"Aucune aspiration prévu pour toute fumée (meulage , plasma, soudage ) .","m":""},{"n":"AS-01353","t":"Situation dangereuse","s":"Clôturé","d":"2023-03-28","l":"soudure sur du galva sans masque ventilé","r":"","g":"Faible","x":"émanation de fumée pendant la soudure","m":""},{"n":"AS-01335","t":"Situation dangereuse","s":"Clôturé","d":"2023-03-24","l":"Presse plieuse","r":"Risque mécanique (coincement/écrasement)","g":"Élevé","x":"Bouton marche tension ne tien plus","m":""},{"n":"AS-01334","t":"Situation dangereuse","s":"Clôturé","d":"2023-03-24","l":"Ales","r":"Plain pied/Circulation","g":"Faible","x":"Enrouleur automatique air HS","m":"Enrouler pour pas que sa gêne"},{"n":"AS-01333","t":"Situation dangereuse","s":"Clôturé","d":"2023-03-24","l":"Ales","r":"Chimique (inhalation, contact, projection)","g":"Très élevé","x":"Rayon uv","m":""},{"n":"AS-01227","t":"Situation dangereuse","s":"Clôturé","d":"2023-03-03","l":"FAB ALES proche cabine peinture","r":"Plain pied/Circulation","g":"Faible","x":"Risque de chute / Etat visuel zone très négative","m":"Nettoyage réalisé par l'équipe suite sollicitation"},{"n":"AS-01222","t":"Situation dangereuse","s":"Clôturé","d":"2023-03-03","l":"Atelier","r":"Chute d'objet","g":"Faible","x":"Objet suspendus au milieu de l’atelier","m":""},{"n":"AS-00207","t":"Situation dangereuse","s":"Clôturé","d":"2023-02-28","l":"Rack zone grillagée","r":"","g":"Faible","x":"Risque de chute des équipements stockés dans le rack","m":"Mise en place de chaîne capable de retenir les équipements stockés dans le rack en cas de chute"},{"n":"AS-00205","t":"Situation dangereuse","s":"Clôturé","d":"2023-02-24","l":"Poste de transformation (local transfo)","r":"Chute de hauteur","g":"Élevé","x":"Moyen d’accès sur un transformateur compliqué dû à l’espace restreint et à la météo avec un temps de pluie","m":"Les mesures prises sont de faire un top avec mon coéquipier sur cette situation dangereuse pour évaluer et diminuer le risque. Avec la confirmation…"},{"n":"AS-00203","t":"Situation dangereuse","s":"Clôturé","d":"2023-02-23","l":"Bureau be","r":"","g":"Faible","x":"Prise mal adapté risque de contact électrique au travers de la vis","m":"Remplacement de cette prise par une prise à encastrer comme elle étais prévu à l’origine"},{"n":"AS-00197","t":"Situation dangereuse","s":"Clôturé","d":"2023-02-17","l":"Entrée SITE","r":"Autre","g":"Moyen","x":"Visuel d'entrée du site donnant sur bennes et dechets . PAs d'autres emplacement possibles compte tenu de la disposition du site et des zones réservées aux shelters . Au delà du visuel, la vision ext. des bennes et palettes…","m":""},{"n":"AS-00196","t":"Situation dangereuse","s":"Clôturé","d":"2023-02-15","l":"lieu de stockage S5","r":"Chute de hauteur","g":"Moyen","x":"palette non conforme","m":"changement de palette par une palette conforme EUROPE et/ou NEPAL."},{"n":"AS-00188","t":"Situation dangereuse","s":"Clôturé","d":"2023-02-07","l":"Place PARKING","r":"Chute d'objet","g":"Très élevé","x":"Chute panneau SIGNALISATION tenu par RISLAN","m":"Dépose du PANNEAU initialement tenus par plusieurs RISLNAS plastiques . Un seul RISLAN présent dégradé . La chute du panneau était imminent ( poids…"},{"n":"AS-00173","t":"Situation dangereuse","s":"Clôturé","d":"2023-01-27","l":"Entrée principale bâtiment","r":"Plain pied/Circulation","g":"Moyen","x":"Absence éclairage des portes d'entrée","m":""},{"n":"AS-00170","t":"Presqu’accident","s":"Clôturé","d":"2023-01-24","l":"ALES 1 BATIMENT FAB ELECTROTECHNICIEN ( SHELTER SMP )","r":"","g":"Faible","x":"Quel gants pour quelle utilisation ?","m":"Prise en main du collaborateur (poste temporaire aménagé ) Débrief Encadrement / Débrief avec équipes sur le lieu du presqu'accident . Causerie…"},{"n":"AS-00165","t":"Situation dangereuse","s":"Clôturé","d":"2023-01-23","l":"PARKING","r":"Autre","g":"Faible","x":"Risque de crevaison.","m":"nettoyage ."},{"n":"AS-00155","t":"Situation dangereuse","s":"Clôturé","d":"2023-01-02","l":"poste béton","r":"Manutention manuelle - Outillage manuel","g":"Élevé","x":"déplacement cellule trop lourde dans le poste","m":""},{"n":"AS-00154","t":"Situation dangereuse","s":"Clôturé","d":"2022-12-30","l":"Salle de réunion ALES 1","r":"Plain pied/Circulation","g":"Élevé","x":"Risque de chute de plain pied","m":"Action 5 S: suppression de jarretieres au sol . Redisposition du switch et ajout d'un routeur WIFI ( cout 0 E présent sur offre contrat )."},{"n":"AS-00153","t":"Situation dangereuse","s":"Clôturé","d":"2022-12-22","l":"Salle de réunion","r":"","g":"Faible","x":"Risque de chutes","m":""},{"n":"AS-00150","t":"Situation dangereuse","s":"Clôturé","d":"2022-12-16","l":"TEST","r":"Manutention mécanique (engins, levage)","g":"Faible","x":"TEST","m":"TEST réception ECHAP&BELLE de Alès par Emilie HEDAN A SUPPRIMER"},{"n":"AS-00148","t":"Presqu’accident","s":"Clôturé","d":"2022-12-15","l":"Magasin ALES1","r":"Chute d'objet","g":"Élevé","x":"Chute de Rails METALLIQUES présents dans un rack . Heurt à la tête du magasinier S.A présent ( port des EPI conformes fort heureusement : casquette coquée ) . Cause liée à l'absence de fixation au sol du RACK et à l'absence de…","m":"Fixation immédiate du rack . Achat et pose d'une chainette mécanique à mi hauteur pour limiter les risques de basculement des rails en cas de…"},{"n":"AS-00145","t":"Situation dangereuse","s":"Clôturé","d":"2022-12-08","l":"portail 2 côté cabine peinture","r":"Heurt - Choc","g":"Moyen","x":"fixation enrouleur soufflette hs risque de chute ou décrochage lors de l'utilisation","m":"remise en état immédiate pour une utilisation en sécurité"},{"n":"AS-00144","t":"Situation dangereuse","s":"Clôturé","d":"2022-12-06","l":"ATELIERS DE PRODUCTION","r":"","g":"Faible","x":"DESORGANISATION / RANGEMENT","m":"ACTIONS 5S : plan d'actions avec équipes référents ( responsabilités, Date mise en place solutions, Responsabilisation des équipes) et CONTROLE !"},{"n":"AS-00128","t":"Situation dangereuse","s":"Clôturé","d":"2022-11-22","l":"zone de chargement","r":"","g":"Faible","x":"Capacité limite de la grue pour les postes 40t","m":""},{"n":"AS-00127","t":"Situation dangereuse","s":"Clôturé","d":"2022-11-18","l":"Levage Poste","r":"Manutention mécanique (engins, levage)","g":"Très élevé","x":"Risque LEVAGE : Balisage / Etats sangles / Planification / Coactivités","m":"Suppression ( destruction) de la sangle en défaut. Rappel vers Service logistique sur besoin de planning levage. Contrôle de l'ensemble dessangles et…"},{"n":"AS-00124","t":"Situation dangereuse","s":"Clôturé","d":"2022-10-17","l":"ales","r":"Chute de hauteur","g":"Moyen","x":"chute de plain pied","m":""},{"n":"AS-00120","t":"Situation dangereuse","s":"Clôturé","d":"2022-10-13","l":"issue de secours côté stock","r":"Plain pied/Circulation","g":"Élevé","x":"sortie de secours obturée par du matériel et autre encombrants","m":"dégagement immédiat de la zone"},{"n":"AS-00116","t":"Situation dangereuse","s":"Clôturé","d":"2022-10-10","l":"station de lavage","r":"","g":"Faible","x":"fuite eau vanne d'arrêt alimentation karsher","m":""},{"n":"AS-00112","t":"Situation dangereuse","s":"Clôturé","d":"2022-09-28","l":"poste béton","r":"","g":"Faible","x":"impossibilité de travailler sur le transfo sans danger de chute grave","m":""},{"n":"AS-00109","t":"Situation dangereuse","s":"Clôturé","d":"2022-09-06","l":"ALes 2","r":"","g":"Faible","x":"Perceuse a colonne fuyante","m":""},{"n":"AS-00107","t":"Situation dangereuse","s":"Clôturé","d":"2022-09-01","l":"Aspirateur atelier","r":"Risques électriques","g":"Moyen","x":"Risque d'arrachement des fils","m":"Réparation de la prise"},{"n":"AS-00106","t":"Situation dangereuse","s":"Clôturé","d":"2022-08-24","l":"bureau","r":"","g":"Faible","x":"réparations prise dans les bureaux","m":""},{"n":"AS-00094","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-12","l":"Dans les postes béton","r":"Heurt - Choc","g":"Élevé","x":"Tiges en férraille dépassant du béton","m":"Tige coupée"},{"n":"AS-00093","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Ales 2","r":"Biologique / Hygiène / Propreté","g":"Moyen","x":"Désagrement _ Lavage des mains","m":""},{"n":"AS-00092","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Ales 2","r":"Chute de hauteur","g":"Moyen","x":"chute de hauteur _ mat NC","m":""},{"n":"AS-00091","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Ales 2","r":"Autre","g":"Moyen","x":"Desagrement : Zoe de change _ Eau _ zone de restauration","m":"Demande immédiate de fontaine a eau (livraison semaine suivante) Achat de bouteille d'eau Fourniture d'un forfait de restauration le temps de…"},{"n":"AS-00090","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Ales 2 parkng","r":"Autre","g":"Faible","x":"Relationnel _ Zone parking","m":""},{"n":"AS-00089","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Alés 2 _ zone parking","r":"Plain pied/Circulation","g":"Faible","x":"Risque de chute de plein pied","m":""},{"n":"AS-00088","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Atelier Ales 2","r":"Chute d'objet","g":"Moyen","x":"risque de chuter","m":""},{"n":"AS-00087","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Ales 2","r":"Heurt - Choc","g":"Élevé","x":"Risque de heurt par manutention _ (télécommande fixe)","m":""},{"n":"AS-00086","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Ales 2 _ Atelier","r":"Manutention mécanique (engins, levage)","g":"Faible","x":"Risque de heurt et d'accroche avec le pont du port","m":""},{"n":"AS-00084","t":"Situation dangereuse","s":"Clôturé","d":"2022-07-07","l":"Zone atelier","r":"Incendie/explosion","g":"Moyen","x":"Ordre et rangement (incendie) etc.","m":""},{"n":"AS-00079","t":"Presqu’accident","s":"Clôturé","d":"2022-06-23","l":"Atelier _ zone soudure","r":"Brûlure","g":"Élevé","x":"Légére cloque sur la main _ efficacité du gant (pointe soudure)","m":""},{"n":"AS-00075","t":"Situation dangereuse","s":"Clôturé","d":"2022-06-08","l":"agence ales","r":"Plain pied/Circulation","g":"Moyen","x":"grille métallique posé au sol","m":""},{"n":"AS-00073","t":"Presqu’accident","s":"Clôturé","d":"2022-06-01","l":"bureau du magasin d","r":"Agression","g":"Élevé","x":"j'a un chat dans la gorge il me griffe les cordes vocalesi","m":""},{"n":"AS-00072","t":"Situation dangereuse","s":"Clôturé","d":"2022-05-05","l":"Sur le parc","r":"Heurt - Choc","g":"Élevé","x":"Chutes de cablofil qui dépasse du rangement, risque de blessure au visage.","m":"Cablofil replacé"},{"n":"AS-00071","t":"Situation dangereuse","s":"Clôturé","d":"2022-05-04","l":"matériel de manutention","r":"Manutention mécanique (engins, levage)","g":"Moyen","x":"plaque de charge gerbeur illisible","m":""},{"n":"AS-00070","t":"Situation dangereuse","s":"Clôturé","d":"2022-05-04","l":"entrée portail atelier","r":"Plain pied/Circulation","g":"Faible","x":"fissure seuil entrée atelier","m":""},{"n":"AS-00068","t":"Situation dangereuse","s":"Clôturé","d":"2022-04-19","l":"rack à cable","r":"Chute d'objet","g":"Élevé","x":"manque clavette sur rack supportant les tourets de cable","m":""},{"n":"AS-00066","t":"Situation dangereuse","s":"Clôturé","d":"2022-04-14","l":"poste beton","r":"","g":"Faible","x":"risque de chute","m":""},{"n":"AS-00065","t":"Presqu’accident","s":"Clôturé","d":"2022-04-14","l":"atelier magasin","r":"Chute de hauteur","g":"Élevé","x":"Pas d'attache pour les gars au dessus","m":""},{"n":"AS-00058","t":"Situation dangereuse","s":"Clôturé","d":"2022-04-04","l":"Rack à tourets de câbles","r":"Chute de hauteur","g":"Moyen","x":"Manutention des tourets de câbles, hauteur, chute, écrasement","m":"Manutention interdite"},{"n":"AS-00053","t":"Situation dangereuse","s":"Clôturé","d":"2022-03-25","l":"atelier","r":"Routier/conduite de véhicule","g":"Élevé","x":"clou sur sol","m":"supprimer les clous"},{"n":"AS-00052","t":"Situation dangereuse","s":"Clôturé","d":"2022-03-25","l":"Atelier - zone cisaille","r":"Manutention manuelle - Outillage manuel","g":"Élevé","x":"Il manque de protection de la cisaille","m":"Aucune mesure prise le carter est cass&é"},{"n":"AS-00049","t":"Situation dangereuse","s":"Clôturé","d":"2022-03-08","l":"chaudronnerie","r":"Chimique (inhalation, contact, projection)","g":"Élevé","x":"Exposition au risque de fumigénation","m":""},{"n":"AS-00048","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-25","l":"ales","r":"Brûlure","g":"Élevé","x":"chaussures non adapter à la chaudronnerie","m":""},{"n":"AS-00047","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-22","l":"atelier","r":"Plain pied/Circulation","g":"Élevé","x":"sortie de secours encombrée","m":"dégagement de la zone immédiatement"},{"n":"AS-00045","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-21","l":"site de valreas","r":"","g":"Faible","x":"accès poste dangereux","m":""},{"n":"AS-00044","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-18","l":"atelier","r":"Incendie/explosion","g":"Élevé","x":"prise de courant sur produit inflammable","m":"changement du stockage des produits inflammables"},{"n":"AS-00043","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-18","l":"atelier","r":"Chute d'objet","g":"Moyen","x":"étagère casser","m":""},{"n":"AS-00042","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-18","l":"parc automobile","r":"Routier/conduite de véhicule","g":"Moyen","x":"transport de produit dangereux","m":""},{"n":"AS-00041","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-17","l":"parc véhicule atelier","r":"Routier/conduite de véhicule","g":"Élevé","x":"usure véhicule","m":"information au prêt de lydia lui indiquant l'état du véhicule"},{"n":"AS-00040","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-16","l":"bureau","r":"","g":"Faible","x":"test","m":""},{"n":"AS-00038","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-08","l":"atelier de chaudronnerie","r":"Outillage et matériel électroportatif","g":"Élevé","x":"absence de bouton arret urgence perceuse a colonne","m":""},{"n":"AS-00029","t":"Presqu’accident","s":"Clôturé","d":"2022-02-02","l":"poste béton","r":"Heurt - Choc","g":"Élevé","x":"des fibres métalliques ressortent du béton au niveau de différentes arrêtes des ouvertures","m":"élimination des fibres métalliques ressortant du béton"},{"n":"AS-00028","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-02","l":"Proche atelier câblage","r":"Plain pied/Circulation","g":"Moyen","x":"Fuite hydraulique de la machine à barre cuivre.","m":""},{"n":"AS-00027","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-01","l":"stockage extérieur","r":"Heurt - Choc","g":"Élevé","x":"tôle stockée à l'extérieur, en hauteur,non cerclées sur leur support","m":"mise en place d'une sangle pour éviter que les toleries s'envole avec les forts coup de vent comme constater précédemment"},{"n":"AS-00026","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-01","l":"salle de reunion","r":"","g":"Faible","x":"hihi","m":""},{"n":"AS-00025","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-01","l":"salle de réunion","r":"","g":"Faible","x":"câble au Sol","m":""},{"n":"AS-00024","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-01","l":"bungalow reunion","r":"","g":"Faible","x":"câble en plein milieu du passage","m":""},{"n":"AS-00023","t":"Situation dangereuse","s":"Clôturé","d":"2022-02-01","l":"Salle de réunion","r":"","g":"Faible","x":"Cheveux en vrac","m":"Coiffeur ou chouchou"},{"n":"AS-00021","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-27","l":"atelier","r":"Chute de hauteur","g":"Moyen","x":"escabeau défectueux et dangereux","m":"mise aux rebuts"},{"n":"AS-00020","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-24","l":"La cours d'Alés","r":"Plain pied/Circulation","g":"Moyen","x":"tôle mal ranger sur palette","m":""},{"n":"AS-00016","t":"Presqu’accident","s":"Clôturé","d":"2022-01-13","l":"Salle de réunion","r":"Plain pied/Circulation","g":"Moyen","x":"Risque de chute salle de réunion cable","m":"RAS"},{"n":"AS-00015","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-12","l":"atelier","r":"Risques électriques","g":"Très élevé","x":"rallonge électrique défectueuse","m":"enrouleurs mis de côte"},{"n":"AS-00014","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-11","l":"atelier zone câblage","r":"Chimique (inhalation, contact, projection)","g":"Moyen","x":"fuite hydraulique de la machine à barre cuivre ,au sol","m":"nettoyage huile au sol et absorbant"},{"n":"AS-00013","t":"Presqu’accident","s":"Clôturé","d":"2022-01-11","l":"Danger de cabe au milieu de la piéce","r":"Plain pied/Circulation","g":"Élevé","x":"Chute de plein","m":""},{"n":"AS-00012","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-11","l":"salle de reunion","r":"","g":"Faible","x":"fil qui traverse la pièce, risque de chute","m":""},{"n":"AS-00011","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-11","l":"salle de réunion","r":"Plain pied/Circulation","g":"Moyen","x":"rallonge électrique en plain milieu du passage","m":""},{"n":"AS-00009","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-11","l":"Salle de réunion","r":"Manutention manuelle - Outillage manuel","g":"Moyen","x":"Fil présent en plein du sol de la salle réunion","m":""},{"n":"AS-00008","t":"Presqu’accident","s":"Clôturé","d":"2022-01-10","l":"salle de réunion","r":"","g":"Faible","x":"cable volant","m":""},{"n":"AS-00007","t":"Situation dangereuse","s":"Clôturé","d":"2022-01-10","l":"Atelier","r":"Outillage et matériel électroportatif","g":"Moyen","x":"Faisceau de la plieusae déposé. <","m":"Remettre en place le capteur lumineux"}];
 
   // Calendrier des fêtes (prénom du jour), mois par mois, séparés par « | ».
   const SAINTS = [
@@ -109,6 +232,7 @@
     "Florence|Viviane|François-Xavier|Barbara|Gérald|Nicolas|Ambroise|Marie|Pierre|Romaric|Daniel|Jeanne-Françoise|Lucie|Odile|Ninon|Alice|Gaël|Gatien|Urbain|Théophile|Pierre|Françoise-Xavière|Armand|Adèle|Noël|Étienne|Jean|Gaspard|David|Roger|Sylvestre"
   ].map(m => m.split("|"));
 
+  // ============ COMPTEUR ============
   function dateDepuisISO(iso) {
     const [annee, mois, jour] = iso.split("-").map(Number);
     return new Date(annee, mois - 1, jour);
@@ -134,6 +258,7 @@
     document.getElementById("lastDate").textContent = formaterDate(dernierAccident);
   }
 
+  // ============ HORLOGE, DATE, FÊTE DU JOUR ============
   let jourAffiche = "";
 
   function actualiserHorloge() {
@@ -146,7 +271,7 @@
     if (jourCle !== jourAffiche) {
       jourAffiche = jourCle;
 
-      let txt = new Intl.DateTimeFormat("fr-FR", {
+      const txt = new Intl.DateTimeFormat("fr-FR", {
         weekday: "long", day: "numeric", month: "long", year: "numeric"
       }).format(now);
       document.getElementById("today").textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
@@ -158,11 +283,173 @@
     }
   }
 
+  // ============ ALERTES QUI DÉFILENT ============
+  const piste = document.getElementById("alertsTrack");
+  let liste1 = null;
+  let decalage = 0;        // position de défilement (conservée d'une visite à l'autre : on reprend où on s'était arrêté)
+  let hauteurListe = 0;
+  let derniereImage = 0;
+  let rafId = null;
+
+  function el(tag, classe, texte) {
+    const e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texte) e.textContent = texte;
+    return e;
+  }
+
+  function classeGravite(g) {
+    return "sev-" + String(g || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, "-");
+  }
+
+  function creerCarte(a) {
+    const carte = el("div", "alert " + classeGravite(a.g));
+
+    const colDate = el("div");
+    colDate.appendChild(el("div", "a-date", formaterDate(dateDepuisISO(a.d))));
+    colDate.appendChild(el("div", "a-id", a.n));
+
+    const colTexte = el("div");
+    colTexte.appendChild(el("div", "a-desc", a.x));
+    const meta = [a.t, a.l, a.r].filter(Boolean).join(" · ");
+    if (meta) colTexte.appendChild(el("div", "a-meta", meta));
+    if (a.m) colTexte.appendChild(el("div", "a-measure", "Mesure prise : " + a.m));
+
+    const badges = el("div", "badges");
+    if (a.g) badges.appendChild(el("div", "badge", a.g.toUpperCase()));
+    badges.appendChild(el("div", "badge statut" + (a.s === "En cours" ? " encours" : ""), a.s.toUpperCase()));
+
+    carte.append(colDate, colTexte, badges);
+    return carte;
+  }
+
+  function construireAlertes() {
+    const alertes = ALERTES.filter(a => !ALERTES_DEPUIS || a.d >= ALERTES_DEPUIS);
+    const enCours = alertes.filter(a => a.s === "En cours").length;
+    document.getElementById("alertsCount").textContent = alertes.length
+      ? alertes.length + " alerte" + (alertes.length > 1 ? "s" : "") + " déclarée" + (alertes.length > 1 ? "s" : "") +
+        (enCours ? " · dont " + enCours + " en cours de traitement" : "")
+      : "";
+
+    piste.textContent = "";
+    if (!alertes.length) {
+      piste.appendChild(el("div", "alerts-empty", "Aucune alerte à afficher"));
+      liste1 = null;
+      return;
+    }
+    liste1 = el("div", "alert-list");
+    alertes.forEach(a => liste1.appendChild(creerCarte(a)));
+    const liste2 = liste1.cloneNode(true);   // 2e copie pour un défilement sans coupure
+    piste.append(liste1, liste2);
+  }
+
+  function mesurerAlertes() {
+    if (!liste1) { hauteurListe = 0; return; }
+    const ancienne = hauteurListe;
+    hauteurListe = liste1.offsetHeight;
+    if (ancienne && hauteurListe) decalage = decalage / ancienne * hauteurListe;
+  }
+
+  function imageDefilement(t) {
+    if (!derniereImage) derniereImage = t;
+    const dt = Math.min((t - derniereImage) / 1000, 0.1);
+    derniereImage = t;
+    if (hauteurListe > 0) {
+      decalage += window.innerHeight * VITESSE_DEFILEMENT / 100 * dt;
+      if (decalage >= hauteurListe) decalage -= hauteurListe;
+      piste.style.transform = "translateY(" + (-decalage) + "px)";
+    }
+    rafId = requestAnimationFrame(imageDefilement);
+  }
+
+  function demarrerDefilement() {
+    mesurerAlertes();
+    derniereImage = 0;
+    if (!rafId) rafId = requestAnimationFrame(imageDefilement);
+  }
+
+  function arreterDefilement() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+
+  // ============ ALTERNANCE DES PAGES ============
+  const pages = [document.getElementById("view-counter"), document.getElementById("view-alerts")];
+  let pageCourante = 0;
+  let minuterie = null;
+
+  function afficherPage(i) {
+    pageCourante = i;
+    pages.forEach((p, k) => p.classList.toggle("active", k === i));
+    if (i === 1) demarrerDefilement();
+    else setTimeout(() => { if (pageCourante === 0) arreterDefilement(); }, 900);  // laisse finir le fondu
+  }
+
+  function lancerAlternance() {
+    clearInterval(minuterie);
+    minuterie = setInterval(() => afficherPage(1 - pageCourante), DUREE_PAGE_SECONDES * 1000);
+  }
+
+  // Touches ← / → : changer de page manuellement (pratique pour tester), puis le rythme reprend.
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      afficherPage(1 - pageCourante);
+      lancerAlternance();
+    }
+  });
+
+  window.addEventListener("resize", () => { if (pageCourante === 1) mesurerAlertes(); });
+
+  // ============ BANDEAU DE MESSAGE ============
+  const bandeau = document.getElementById("ticker");
+  const texteBandeau = document.getElementById("tickerText");
+  let messageAffiche = null;
+
+  function nettoyerMessage(brut) {
+    return String(brut || "").split(/\r?\n/).map(l => l.trim())
+      .filter(l => l && !l.startsWith("#")).join("   •   ");
+  }
+
+  function demarrerBandeau() {
+    const largeurZone = bandeau.clientWidth;
+    const largeurTexte = texteBandeau.offsetWidth;
+    const vitesse = window.innerWidth * VITESSE_MESSAGE / 100;   // pixels par seconde
+    texteBandeau.style.animation = "none";
+    texteBandeau.style.setProperty("--depart", largeurZone + "px");
+    texteBandeau.style.setProperty("--arrivee", (-largeurTexte) + "px");
+    void texteBandeau.offsetWidth;                                // relance l'animation
+    texteBandeau.style.animation = "defile-message " + ((largeurZone + largeurTexte) / vitesse) + "s linear infinite";
+  }
+
+  function appliquerMessage(msg) {
+    if (msg === messageAffiche) return;                           // rien n'a changé : on ne coupe pas le défilement
+    messageAffiche = msg;
+    bandeau.style.display = msg ? "" : "none";
+    texteBandeau.textContent = msg;
+    if (msg) demarrerBandeau();
+  }
+
+  async function chargerMessage() {
+    try {
+      const rep = await fetch(FICHIER_MESSAGE + "?t=" + Date.now(), { cache: "no-store" });
+      if (!rep.ok) throw new Error("introuvable");
+      appliquerMessage(nettoyerMessage(await rep.text()));
+    } catch (e) {
+      if (messageAffiche === null) appliquerMessage(nettoyerMessage(MESSAGE_PAR_DEFAUT));
+    }
+  }
+
+  window.addEventListener("resize", () => { if (messageAffiche) demarrerBandeau(); });
+
+  // ============ DÉMARRAGE ============
+  construireAlertes();
   actualiserCompteur();
   actualiserHorloge();
-  // L'heure se met à jour chaque seconde ; date, fête et compteur changent automatiquement à minuit.
   setInterval(actualiserHorloge, 1000);
   setInterval(actualiserCompteur, 60 * 60 * 1000);
+  chargerMessage();
+  setInterval(chargerMessage, ACTUALISATION_MESSAGE_SECONDES * 1000);
+  lancerAlternance();   // on démarre sur la page d'origine (compteur)
 </script>
 </body>
 </html>
