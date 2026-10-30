@@ -2,4 +2,6 @@
 # Les lignes qui commencent par # sont ignorées. Enregistrez le fichier en UTF-8.
 # Pour ne rien afficher, laissez le fichier sans aucune ligne de message.
 
-11H30 on parle NEUROSCIENCES / STOP SECURITE
+DEMAIN FORMATION PONT (MATHIEU,YOAN,SAMIR) 8h sur site 
+ROMAIN ABSENT (PAPA )
+ABSENCE : ELIAS
