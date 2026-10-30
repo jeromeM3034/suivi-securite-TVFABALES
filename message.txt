@@ -3,5 +3,5 @@
 # Pour ne rien afficher, laissez le fichier sans aucune ligne de message.
 
 DEMAIN FORMATION PONT (MATHIEU,YOAN,SAMIR) 8h sur site 
-ROMAIN ABSENT (PAPA )
+ROMAIN ABSENT ( PAPA )
 ABSENCE : ELIAS
